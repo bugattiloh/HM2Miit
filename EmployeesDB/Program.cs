@@ -12,7 +12,7 @@ namespace EmployeesDB
 
         static void Main(string[] args)
         {
-            Pr4();
+            Pr8();
         }
 
         static string GetEmployeesInformation()
@@ -91,6 +91,54 @@ namespace EmployeesDB
                 Console.WriteLine($"{item.ProjectId}: {item.Name}");
             }
         }
+        private static void Pr5()
+        {
+            var names = _context.Departments.Where(d => d.Employees.Count < 5).Select(d => d.Name).ToList();
+            Console.WriteLine(String.Join(", ", names));
+        }
+
+        private static void Pr6()
+        {
+            int depId = int.Parse(Console.ReadLine());
+
+            int procent = int.Parse(Console.ReadLine());
+
+            var deps = _context.Departments
+                .Where(e => e.DepartmentId == depId)
+                .Include(e => e.Employees)
+                .First();
+
+            foreach (var it in deps.Employees)
+            {
+                it.Salary *= (decimal)(1 + procent / 100f);
+            }
+            _context.SaveChanges();
+        }
+        private static void Pr7()
+        {
+            int depId = int.Parse(Console.ReadLine());
+            var deps = _context.Departments
+                .Where(e => e.DepartmentId == depId)
+                .Include(e => e.Employees)
+                .First();
+
+            _context.RemoveRange(deps.Employees);
+            _context.Remove(deps);
+            _context.SaveChanges();
+        }
+        private static void Pr8()
+        {
+            string townsName = Console.ReadLine();
+            var town = _context.Towns
+                .Where(e => e.Name == townsName)
+                .Include(e => e.Addresses)
+                .First();
+
+            _context.Entry(town).Collection(t => t.Addresses).Load();
+            _context.Remove(town);
+            _context.SaveChanges();
+        }
+
 
     }
 }
