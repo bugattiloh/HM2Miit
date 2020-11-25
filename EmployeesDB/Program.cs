@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using EmployeesDB.Data.Models;
 
+
 namespace EmployeesDB
 {
     class Program
@@ -12,7 +13,7 @@ namespace EmployeesDB
 
         static void Main(string[] args)
         {
-            Pr8();
+            Pr7();
         }
 
         static string GetEmployeesInformation()
@@ -40,7 +41,11 @@ namespace EmployeesDB
 
         private static void Pr1()
         {
-            var list = _context.Employees.Where(e => e.Salary >= 48000).OrderBy(e => e.LastName).ToList();
+            var list = from e in _context.Employees
+                       where e.Salary > 48000
+                       orderby e
+                       select e;
+
             foreach (var item in list)
             {
                 Console.WriteLine($"{item.FirstName},{item.LastName},{item.Salary}");
@@ -48,44 +53,57 @@ namespace EmployeesDB
         }
         private static void Pr2()
         {
-            var list = _context.Employees.Where(e => e.LastName == "Brown").ToList();
-            Addresses addresses = new Addresses();
-            addresses.AddressText = "Valovaya,28";
-            _context.Addresses.Add(addresses);
+            Addresses adr = new Addresses();
+            adr.AddressText = "Deulino,30";
+            _context.Addresses.Add(adr);
+
             _context.SaveChanges();
+
+            var list = from e in _context.Employees
+                       where e.LastName == "Brown"
+                       select e;
+
             foreach (var item in list)
             {
-                item.Address = addresses;
+                item.Address = adr;
             }
             _context.SaveChanges();
         }
         private static void Pr3()
         {
-            var projects = _context.Projects
-                .Where(p => p.StartDate.Year >= 2003 && p.StartDate.Year <= 2005)
-                .Include(p => p.EmployeesProjects)
-                .ThenInclude(p => p.Employee).ThenInclude(p => p.Manager).ToList();
+            var list = from p in _context.Projects
+                       where p.StartDate.Year >= 2002 && p.StartDate.Year <= 2005
+                       select p;
 
-            foreach (var item in projects)
+            int k = 0;
+            foreach (var item in list)
             {
-                foreach (var t in item.EmployeesProjects)
+                if (k == 4)
                 {
-
+                    break;
                 }
+                Console.WriteLine($"{item.Name},{item.StartDate},{item.StartDate}");
+                k++;
             }
         }
         private static void Pr4()
         {
             int dbID = int.Parse(Console.ReadLine());
-            var employee = _context.Employees
-                .Where(e => e.EmployeeId == dbID)
-                .Include(e => e.EmployeesProjects)
-                .ThenInclude(e => e.Project)
-                .First();
 
-            var projects = employee.EmployeesProjects.Select(p => p.Project).ToList();
+            var employee = from e in _context.Employees
+                           where e.EmployeeId == dbID
+                           select e;
 
-            Console.WriteLine($"{employee.FirstName},{employee.LastName},{employee.MiddleName}");
+            var projects = from p in _context.EmployeesProjects
+                           where p.EmployeeId == dbID
+                           select p.Project;
+
+
+            foreach (var item in employee)
+            {
+                Console.WriteLine($"{item.FirstName},{item.LastName},{item.MiddleName}");
+            }
+
             foreach (var item in projects)
             {
                 Console.WriteLine($"{item.ProjectId}: {item.Name}");
@@ -93,8 +111,14 @@ namespace EmployeesDB
         }
         private static void Pr5()
         {
-            var names = _context.Departments.Where(d => d.Employees.Count < 5).Select(d => d.Name).ToList();
-            Console.WriteLine(String.Join(", ", names));
+            var names = from d in _context.Departments
+                        where d.Employees.Count < 5
+                        select d;
+
+            foreach (var item in names)
+            {
+                Console.WriteLine($"{item.Name}");
+            }
         }
 
         private static void Pr6()
@@ -103,40 +127,51 @@ namespace EmployeesDB
 
             int procent = int.Parse(Console.ReadLine());
 
-            var deps = _context.Departments
-                .Where(e => e.DepartmentId == depId)
-                .Include(e => e.Employees)
-                .First();
+            var employees = from d in _context.Departments
+                            where d.DepartmentId == depId
+                            select d.Employees;
 
-            foreach (var it in deps.Employees)
+            var ems = employees.SelectMany(e => e);
+
+            foreach (var e in ems)
             {
-                it.Salary *= (decimal)(1 + procent / 100f);
+                e.Salary *= (decimal)(1 + procent / 100f);
             }
             _context.SaveChanges();
         }
         private static void Pr7()
         {
             int depId = int.Parse(Console.ReadLine());
-            var deps = _context.Departments
-                .Where(e => e.DepartmentId == depId)
-                .Include(e => e.Employees)
-                .First();
 
-            _context.RemoveRange(deps.Employees);
-            _context.Remove(deps);
+            var deps = from d in _context.Departments
+                       where d.DepartmentId == depId
+                       select d;
+
+            foreach (var d in deps)
+            {
+                _context.Departments.Remove(d);
+                
+            }
+
             _context.SaveChanges();
         }
         private static void Pr8()
         {
-            string townsName = Console.ReadLine();
-            var town = _context.Towns
-                .Where(e => e.Name == townsName)
-                .Include(e => e.Addresses)
-                .First();
+            {
+                string townName = Console.ReadLine();
 
-            _context.Entry(town).Collection(t => t.Addresses).Load();
-            _context.Remove(town);
-            _context.SaveChanges();
+                var towns = from t in _context.Towns
+                           where t.Name == townName
+                          select t;
+
+                foreach (var t in towns)
+                {
+                    _context.Towns.Remove(t);
+
+                }
+
+                _context.SaveChanges();
+            }
         }
 
 
